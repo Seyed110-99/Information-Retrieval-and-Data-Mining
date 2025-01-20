@@ -47,6 +47,9 @@ s = 1  # Zipf's parameter
 zipf_frequencies = 1 / ranks**s
 zipf_frequencies /= zipf_frequencies.sum() 
 
+vocabulary_size = len(term_counts)
+print(f"Vocabulary size: {vocabulary_size}")
+
 # Plot empirical and theoretical distributions
 plt.plot(ranks, np.sort(term_counts_np)[::-1], label='Empirical')
 plt.plot(ranks, zipf_frequencies, label='Theoretical (Zipf)', linestyle='--')
@@ -56,4 +59,5 @@ plt.xlabel('Rank')
 plt.ylabel('Frequency')
 plt.legend()
 plt.title('Empirical vs. Theoretical Frequencies')
+plt.savefig('Task1_fig.pdf', format='pdf')
 plt.show()
