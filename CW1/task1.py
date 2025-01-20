@@ -4,6 +4,10 @@ from collections import Counter
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+
 
 # Load the data
 def load_data(file_path):
@@ -12,9 +16,6 @@ def load_data(file_path):
     # Rename the column
     data.columns = ['passage'] 
     return data
-
-data = load_data('passage-collection.txt')
-
 
 # Clean the text and tokenise it
 def tokenise_txt(text):
@@ -25,8 +26,6 @@ def tokenise_txt(text):
     #print(clean_text)
     tokens = clean_text.split()
     return tokens
-all_data = " ".join(data['passage'])
-tokens = tokenise_txt(all_data) 
 
 # Count the frequency of each word
 def calculate_word_frequencies(tokens):
@@ -38,26 +37,38 @@ def calculate_word_frequencies(tokens):
     normalised_freq = {term: count/total_terms for term, count in term_counts.items()}
     return normalised_freq
 
+
+
+def plot(term_counts,num):
+   term_counts_np = np.array(list(term_counts.values()))
+   ranks = np.arange(1, len(term_counts_np) + 1)
+   s = 1  # Zipf's parameter
+   zipf_frequencies = 1 / ranks**s
+   zipf_frequencies /= zipf_frequencies.sum() 
+   vocabulary_size = len(term_counts)
+   print(f"Vocabulary size: {vocabulary_size}")
+   # Plot empirical and theoretical distributions
+   plt.plot(ranks, np.sort(term_counts_np)[::-1], label='Empirical')
+   plt.plot(ranks, zipf_frequencies, label='Theoretical (Zipf)', linestyle='--')
+   plt.xscale('log')
+   plt.yscale('log')
+   plt.xlabel('Rank')
+   plt.ylabel('Frequency')
+   plt.legend()
+   plt.title('Empirical vs. Theoretical Frequencies')
+   plt.savefig('Task_1_'+str(num)+'_fig.pdf', format='pdf')
+   plt.show()
+
+data = load_data('passage-collection.txt')
+all_data = " ".join(data['passage'])
+tokens = tokenise_txt(all_data) 
 term_counts = calculate_word_frequencies(tokens)
+print(f"Vocabulary size (with stop words): {len(term_counts)}")
+plot(term_counts,1)
 
-term_counts_np = np.array(list(term_counts.values()))
+stop_words = set(stopwords.words('english'))
+tokens_no_stopwords = [word for word in tokens if word not in stop_words]
+term_counts_no_stopwords = calculate_word_frequencies(tokens_no_stopwords)
+print(f"Vocabulary size (without stop words): {len(term_counts_no_stopwords)}")
 
-ranks = np.arange(1, len(term_counts_np) + 1)
-s = 1  # Zipf's parameter
-zipf_frequencies = 1 / ranks**s
-zipf_frequencies /= zipf_frequencies.sum() 
-
-vocabulary_size = len(term_counts)
-print(f"Vocabulary size: {vocabulary_size}")
-
-# Plot empirical and theoretical distributions
-plt.plot(ranks, np.sort(term_counts_np)[::-1], label='Empirical')
-plt.plot(ranks, zipf_frequencies, label='Theoretical (Zipf)', linestyle='--')
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('Rank')
-plt.ylabel('Frequency')
-plt.legend()
-plt.title('Empirical vs. Theoretical Frequencies')
-plt.savefig('Task1_fig.pdf', format='pdf')
-plt.show()
+plot(term_counts_no_stopwords,2)
