@@ -40,8 +40,6 @@ def calculate_word_frequencies(tokens):
 
 term_counts = calculate_word_frequencies(tokens)
 
-sorted_terms = sorted(term_counts.items(), key=lambda x: x[1], reverse=True)
-
 term_counts_np = np.array(list(term_counts.values()))
 
 ranks = np.arange(1, len(term_counts_np) + 1)
