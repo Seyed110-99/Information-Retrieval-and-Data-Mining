@@ -48,8 +48,12 @@ def plot(term_counts,num):
    vocabulary_size = len(term_counts)
    print(f"Vocabulary size: {vocabulary_size}")
    # Plot empirical and theoretical distributions
+
+   # Plot the empirical distribution
    plt.plot(ranks, np.sort(term_counts_np)[::-1], label='Empirical')
+   # Plot the theoretical Zipf distribution
    plt.plot(ranks, zipf_frequencies, label='Theoretical (Zipf)', linestyle='--')
+   # Set the scale to log-log
    plt.xscale('log')
    plt.yscale('log')
    plt.xlabel('Rank')
