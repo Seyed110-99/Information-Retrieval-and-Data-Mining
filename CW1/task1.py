@@ -14,6 +14,7 @@ nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('punkt')
 
+# Ignore SSL certificate errors
 try:
     ssl._create_default_https_context = ssl._create_unverified_context
 except AttributeError:
@@ -24,6 +25,7 @@ def load_data(file_path):
     """
     Load the data from the given file path.
     """
+    # Check if the file exists
     try:
         data = pd.read_csv(file_path, delimiter='\t', header=None)
         data.columns = ['passage']
@@ -44,6 +46,7 @@ def tokenise_txt(text, remove_stopwords=False, lemmatise=False, stem=False):
     clean_text = re.sub(r'[^a-zA-Z\s]', ' ', text.lower())
     tokens = nltk.word_tokenize(clean_text)
 
+    # Remove stopwords, lemmatise and/or stem the tokens
     if remove_stopwords:
         stop_words = set(stopwords.words('english'))
         tokens = [word for word in tokens if word not in stop_words]
@@ -63,6 +66,7 @@ def calculate_word_frequencies(tokens):
     """
     Calculate the frequency of each word in the tokens list.
     """
+    # Create a DataFrame with word frequencies
     df = pd.Series(tokens).value_counts().reset_index()
     df.columns = ['word', 'count']
     df['normalised_freq'] = df['count'] / df['count'].sum()
@@ -86,11 +90,11 @@ def plot(df, num, remove_stopwords=False, scale="log-log"):
     zipf_frequencies, ranks = calculate_zipf_frequencies(df)
     plt.figure()
     if scale == "linear":
-        plt.plot(ranks, zipf_frequencies, '--', label="Zipf's Distribution")
-        plt.plot(ranks, df['normalised_freq'], '-', label="Empirical Distribution")
+        plt.plot(ranks, zipf_frequencies, '-', label="Zipf's Distribution")
+        plt.plot(ranks, df['normalised_freq'], '--', label="Empirical Distribution")
     else:
-        plt.loglog(ranks, zipf_frequencies, '--', label="Zipf's Distribution")
-        plt.loglog(ranks, df['normalised_freq'], '-', label="Empirical Distribution")
+        plt.loglog(ranks, zipf_frequencies, '-', label="Zipf's Distribution")
+        plt.loglog(ranks, df['normalised_freq'], '--', label="Empirical Distribution")
     plt.xlabel("Rank (log)")
     plt.ylabel("Frequency (log)")
     title = "Empirical vs. Zipf's Law (No Stopwords)" if remove_stopwords else "Empirical vs. Zipf's Law (With Stopwords)"
