@@ -127,11 +127,12 @@ if __name__ == "__main__":
 
     tokens_no_stopwords = tokenise_txt(all_data, remove_stopwords=True)
     term_counts_no_stopwords = calculate_word_frequencies(tokens_no_stopwords)
-
+    
     # Print insights
+    print(f"Total number of tokens: {term_counts_df['count'].sum()}")
+    print(f"Total number of tokens (no stop words): {term_counts_no_stopwords['count'].sum()}")
     print(f"Vocabulary size (with stopwords): {len(term_counts_df)}")
     print(f"Vocabulary size (without stopwords): {len(term_counts_no_stopwords)}")
-
     # Generate plots
     plot_batch(term_counts_df, term_counts_no_stopwords)
 
