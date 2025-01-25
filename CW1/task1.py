@@ -52,8 +52,8 @@ def tokenise_txt(text, remove_stopwords=False, lemmatise=False, stem=False):
         tokens = [word for word in tokens if word not in stop_words]
 
     if lemmatise:
-        lemmatizer = WordNetLemmatizer()
-        tokens = [lemmatizer.lemmatize(word) for word in tokens]
+        lemmatiser = WordNetLemmatizer()
+        tokens = [lemmatiser.lemmatize(word) for word in tokens]
 
     if stem:
         stemmer = SnowballStemmer('english')
