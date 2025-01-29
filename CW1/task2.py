@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # Pid file save to json
     pid_and_tokens_lists = zip(data_raw_txt_df['pid'].tolist(), data_raw_txt_df['tokenised_passage'].tolist())
 
-    with open("pid_and_tokens.json", "w") as f:
+    with open("processed_passage.json", "w") as f:
         json.dump(dict(pid_and_tokens_lists), f, indent=2)
     # Save the inverted index to a JSON file
     with open("inverted_index.json", "w") as f:
