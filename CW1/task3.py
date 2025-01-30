@@ -72,7 +72,7 @@ def cosine_similarity(query_idf_tf, passage_idf_tf, pid_qid_df, query_df):
     Compute cosine similarity between query TF-IDF vectors and passage TF-IDF vectors.
     """
     cosine_df = pd.DataFrame()
-    all_qid = query_df['qid'].tolist()
+    all_qid = query_df.loc[:,'qid'].tolist()
 
     for qid in all_qid:
         query_tfidf = query_idf_tf.get(qid, {})  # Get query TF-IDF vector
@@ -203,5 +203,8 @@ if __name__ == "__main__":
     # Save top-ranked passages in bm25.csv
     bm25_df.to_csv("bm25.csv", mode='w', index=False, header=False)
 
+    with open("processed_query.json", 'w') as f:
+        json.dump(qid_query_dict, f, indent=4)
+    
     end = timer()
     print(f"Process completed in {(((end - start))/60):.2f} minutes.")
