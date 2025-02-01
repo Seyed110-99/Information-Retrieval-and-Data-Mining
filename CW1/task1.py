@@ -9,132 +9,148 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer, SnowballStemmer
 import ssl
 
-# Setup NLTK downloads
+# Ensure required NLTK resources are available
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('punkt')
 
-# Ignore SSL certificate errors
+# Handle SSL certificate issues if present
 try:
     ssl._create_default_https_context = ssl._create_unverified_context
 except AttributeError:
     pass
 
-# **1. Load the Data**
-def load_data(file_path):
+
+# --- 1. Data Loading ---
+def read_passage_file(path):
     """
-    Load the data from the given file path.
+    Reads the file at the given path using tab as a delimiter.
+    Expects one passage per row and returns a DataFrame with column 'passage'.
     """
-    # Check if the file exists
     try:
-        data = pd.read_csv(file_path, delimiter='\t', header=None)
-        data.columns = ['passage']
-        return data
+        df = pd.read_csv(path, delimiter='\t', header=None)
+        df.columns = ['passage']
+        return df
     except FileNotFoundError:
-        print(f"Error: File not found - {file_path}")
+        print(f"Error: File not found - {path}")
         return pd.DataFrame(columns=['passage'])
     except Exception as e:
         print(f"Error loading data: {e}")
         return pd.DataFrame(columns=['passage'])
 
-# **2. Tokenize and Preprocess Text**
-def tokenise_txt(text, remove_stopwords=False, lemmatise=False, stem=False):
+
+# --- 2. Text Tokenization and Preprocessing ---
+def preprocess_text(text, remove_stop=False, do_lemmatize=False, do_stem=False):
     """
-    Tokenize and preprocess the text.
+    Lowercases and cleans the input text by removing non-alphabet characters.
+    Then tokenizes the text using NLTK.
+    Optionally removes stopwords, performs lemmatization and/or stemming.
     """
-    # Clean the text
-    clean_text = re.sub(r'[^a-zA-Z\s]', ' ', text.lower())
-    tokens = nltk.word_tokenize(clean_text)
+    # Convert to lowercase and remove unwanted characters
+    cleaned = re.sub(r'[^a-zA-Z\s]', ' ', text.lower())
+    tokens = nltk.word_tokenize(cleaned)
 
-    # Remove stopwords, lemmatise and/or stem the tokens
-    if remove_stopwords:
-        stop_words = set(stopwords.words('english'))
-        tokens = [word for word in tokens if word not in stop_words]
-
-    if lemmatise:
-        lemmatiser = WordNetLemmatizer()
-        tokens = [lemmatiser.lemmatize(word) for word in tokens]
-
-    if stem:
+    if remove_stop:
+        stops = set(stopwords.words('english'))
+        tokens = [w for w in tokens if w not in stops]
+    if do_lemmatize:
+        lemmatizer = WordNetLemmatizer()
+        tokens = [lemmatizer.lemmatize(w) for w in tokens]
+    if do_stem:
         stemmer = SnowballStemmer('english')
-        tokens = [stemmer.stem(word) for word in tokens]
-
+        tokens = [stemmer.stem(w) for w in tokens]
     return tokens
 
-# **3. Calculate Word Frequencies**
-def calculate_word_frequencies(tokens):
-    """
-    Calculate the frequency of each word in the tokens list.
-    """
-    # Create a DataFrame with word frequencies
-    df = pd.Series(tokens).value_counts().reset_index()
-    df.columns = ['word', 'count']
-    df['normalised_freq'] = df['count'] / df['count'].sum()
-    return df
 
-# **4. Calculate Zipf's Frequencies**
-def calculate_zipf_frequencies(df):
+# --- 3. Word Frequency Calculation ---
+def compute_frequency(token_list):
     """
-    Calculate theoretical Zipf's frequencies for the given DataFrame.
+    Computes the frequency of each token in the provided list.
+    Returns a DataFrame with columns: 'word', 'count', and 'normalised_freq'.
     """
-    ranks = np.arange(1, len(df) + 1)
-    zipf_frequencies = 1 / ranks
-    zipf_frequencies /= zipf_frequencies.sum()
-    return zipf_frequencies, ranks
+    freq_series = pd.Series(token_list).value_counts()
+    freq_df = freq_series.reset_index()
+    freq_df.columns = ['word', 'count']
+    total = freq_df['count'].sum()
+    freq_df['normalised_freq'] = freq_df['count'] / total
+    return freq_df
 
-# **5. Plot Distributions**
-def plot(df, num, remove_stopwords=False, scale="log-log"):
+
+# --- 4. Theoretical Zipf Frequencies ---
+def get_zipf_distribution(freq_df):
     """
-    Plot and save a distribution comparing empirical and Zipf's frequencies.
+    Computes the theoretical Zipf distribution (normalized) for the vocabulary.
+    Returns an array of ranks and their corresponding Zipf frequencies.
     """
-    zipf_frequencies, ranks = calculate_zipf_frequencies(df)
+    ranks = np.arange(1, len(freq_df) + 1)
+    zipf_vals = 1 / ranks
+    zipf_vals = zipf_vals / zipf_vals.sum()
+    return zipf_vals, ranks
+
+
+# --- 5. Plotting Distributions ---
+def save_distribution_plot(freq_df, plot_num, remove_stop, scale="log-log"):
+    """
+    Generates and saves a plot comparing the empirical frequency distribution to
+    the theoretical Zipf distribution. The plot is saved as a PDF with a filename
+    following the pattern: Task_1_<plot_num>_fig.pdf.
+    """
+    zipf_vals, ranks = get_zipf_distribution(freq_df)
     plt.figure()
     if scale == "linear":
-        plt.plot(ranks, zipf_frequencies, '-', label="Zipf's Distribution")
-        plt.plot(ranks, df['normalised_freq'], '--', label="Empirical Distribution")
+        plt.plot(ranks, zipf_vals, '-', label="Zipf's Distribution")
+        plt.plot(ranks, freq_df['normalised_freq'], '--', label="Empirical Distribution")
     else:
-        plt.loglog(ranks, zipf_frequencies, '-', label="Zipf's Distribution")
-        plt.loglog(ranks, df['normalised_freq'], '--', label="Empirical Distribution")
+        plt.loglog(ranks, zipf_vals, '-', label="Zipf's Distribution")
+        plt.loglog(ranks, freq_df['normalised_freq'], '--', label="Empirical Distribution")
     plt.xlabel("Rank (log)")
     plt.ylabel("Frequency (log)")
-    title = "Empirical vs. Zipf's Law (No Stopwords)" if remove_stopwords else "Empirical vs. Zipf's Law (With Stopwords)"
-    plt.title(title)
+    if remove_stop:
+        plt.title("Empirical vs. Zipf's Law (No Stopwords)")
+    else:
+        plt.title("Empirical vs. Zipf's Law (With Stopwords)")
     plt.legend()
-    plt.savefig(f'Task_1_{num}_fig.pdf', format='pdf')
+    plt.savefig(f'Task_1_{plot_num}_fig.pdf', format='pdf')
     plt.close()
 
-# **6. Batch Plot**
-def plot_batch(df, df_no_stopwords):
-    """
-    Generate and save plots for datasets with and without stopwords.
-    """
-    plot(df, num=1, remove_stopwords=False)
-    plot(df_no_stopwords, num=2, remove_stopwords=True)
-    plot(df, num=3, remove_stopwords=False, scale="linear")
 
-# **7. Main Function**
+def create_all_plots(with_stop_df, without_stop_df):
+    """
+    Generates the three required plots:
+      1. Log-log plot with stopwords
+      2. Log-log plot without stopwords
+      3. Linear-scale plot with stopwords
+    """
+    save_distribution_plot(with_stop_df, plot_num=1, remove_stop=False)
+    save_distribution_plot(without_stop_df, plot_num=2, remove_stop=True)
+    save_distribution_plot(with_stop_df, plot_num=3, remove_stop=False, scale="linear")
+
+
+# --- 7. Main Execution ---
 if __name__ == "__main__":
-    start = timer()
+    start_time = timer()
 
-    # Load data
-    file_path = "passage-collection.txt"
-    data = load_data(file_path)
-    all_data = " ".join(data['passage'])
+    # Load the passage data
+    passage_file = "passage-collection.txt"
+    data_df = read_passage_file(passage_file)
+    all_text = " ".join(data_df['passage'])
 
-    # Tokenize and process data
-    tokens = tokenise_txt(all_data)
-    term_counts_df = calculate_word_frequencies(tokens)
+    # Tokenize without removing stopwords
+    tokens_with = preprocess_text(all_text)
+    freq_with = compute_frequency(tokens_with)
 
-    tokens_no_stopwords = tokenise_txt(all_data, remove_stopwords=True)
-    term_counts_no_stopwords = calculate_word_frequencies(tokens_no_stopwords)
-    
-    # Print insights
-    print(f"Total number of tokens: {term_counts_df['count'].sum()}")
-    print(f"Total number of tokens (no stop words): {term_counts_no_stopwords['count'].sum()}")
-    print(f"Vocabulary size (with stopwords): {len(term_counts_df)}")
-    print(f"Vocabulary size (without stopwords): {len(term_counts_no_stopwords)}")
-    # Generate plots
-    plot_batch(term_counts_df, term_counts_no_stopwords)
+    # Tokenize with stopword removal
+    tokens_without = preprocess_text(all_text, remove_stop=True)
+    freq_without = compute_frequency(tokens_without)
 
-    end = timer()
-    print(f"Process completed in {end - start:.2f} seconds.")
+    # Print required statistics
+    print(f"Total number of tokens: {freq_with['count'].sum()}")
+    print(f"Total number of tokens (no stop words): {freq_without['count'].sum()}")
+    print(f"Vocabulary size (with stopwords): {len(freq_with)}")
+    print(f"Vocabulary size (without stopwords): {len(freq_without)}")
+
+    # Generate and save the plots
+    create_all_plots(freq_with, freq_without)
+
+    end_time = timer()
+    print(f"Process completed in {((end_time - start_time)/60):.2f} minutes.")
