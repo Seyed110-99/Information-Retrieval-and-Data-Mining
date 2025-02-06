@@ -9,15 +9,19 @@ def build_inverted_index(documents):
     """
     Constructs an inverted index from an iterable of (pid, token_list) pairs.
     For each token, the index stores a dictionary mapping each document ID (pid)
-    to the term's frequency in that document.
+    to a dictionary containing:
+      - 'freq': frequency count of the term in that document.
+      - 'positions': list of positions (indices) where the term occurs in the token list.
     """
     inverted = {}
     for doc_id, tokens in documents:
-        counts = Counter(tokens)
-        for term, freq in counts.items():
-            if term not in inverted:
-                inverted[term] = {}
-            inverted[term][doc_id] = freq
+        for pos, token in enumerate(tokens):
+            if token not in inverted:
+                inverted[token] = {}
+            if doc_id not in inverted[token]:
+                inverted[token][doc_id] = {"freq": 0, "positions": []}
+            inverted[token][doc_id]["freq"] += 1
+            inverted[token][doc_id]["positions"].append(pos)
     return inverted
 
 if __name__ == "__main__":

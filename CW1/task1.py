@@ -114,6 +114,17 @@ def save_distribution_plot(freq_df, plot_num, remove_stop, scale="log-log"):
     plt.close()
 
 
+def compute_zipf_error(empirical, theoretical):
+    """
+    Computes the RMSE (root-mean-square error) between the empirical and theoretical frequency distributions.
+    """
+    empirical = np.array(empirical)
+    theoretical = np.array(theoretical)
+    mse = np.mean((empirical - theoretical) ** 2)
+    rmse = np.sqrt(mse)
+    return rmse
+
+
 def create_all_plots(with_stop_df, without_stop_df):
     """
     Generates the three required plots:
@@ -142,13 +153,23 @@ if __name__ == "__main__":
     # Tokenize with stopword removal
     tokens_without = preprocess_text(all_text, remove_stop=True)
     freq_without = compute_frequency(tokens_without)
+    
+    # Calculate theoretical Zipf distributions for both cases
+    zipf_vals_with, _ = get_zipf_distribution(freq_with)
+    zipf_vals_without, _ = get_zipf_distribution(freq_without)
+
+    # Compute RMSE between the empirical distribution and the theoretical Zipf distribution
+    rmse_with = compute_zipf_error(freq_with['normalised_freq'], zipf_vals_with)
+    rmse_without = compute_zipf_error(freq_without['normalised_freq'], zipf_vals_without)
 
     # Print required statistics
     print(f"Total number of tokens: {freq_with['count'].sum()}")
     print(f"Total number of tokens (no stop words): {freq_without['count'].sum()}")
     print(f"Vocabulary size (with stopwords): {len(freq_with)}")
     print(f"Vocabulary size (without stopwords): {len(freq_without)}")
-
+    print(f"RMSE (with stopwords): {rmse_with:.6f}")
+    print(f"RMSE (without stopwords): {rmse_without:.6f}")
+    
     # Generate and save the plots
     create_all_plots(freq_with, freq_without)
 

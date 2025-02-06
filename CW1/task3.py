@@ -4,14 +4,13 @@ import numpy as np
 import math
 import json
 from timeit import default_timer as timer
-import task1 as t1  # Use the new task1.py which provides preprocess_text
+import task1 as t1  # Use the preprocessing function from task1.py
 from collections import Counter
-
 
 def compute_passage_idf(passages, inv_index):
     """
     Computes the inverse document frequency (IDF) for each term in the passage collection.
-    The formula applied is: idf = log10( total_passages / (1 + document_frequency) ).
+    The formula applied is: idf = log10(total_docs / (1 + document_frequency)).
     """
     idf_values = {}
     total_docs = len(passages)
@@ -56,7 +55,7 @@ def compute_query_tf_idf(query_dict, idf_values):
 def rank_by_cosine_similarity(query_tf_idf, passage_tf_idf, candidate_df, query_df):
     """
     For each query, computes the cosine similarity between its TF-IDF vector and those of candidate passages.
-    Returns a DataFrame of top 100 (qid, pid, similarity) rows per query.
+    Returns a DataFrame of the top 100 (qid, pid, similarity) rows per query.
     """
     results = []
     for qid in query_df['qid']:
@@ -82,7 +81,7 @@ def rank_by_bm25(query_tf_idf, passages, inv_index, candidate_df):
     """
     For each query, computes BM25 scores for candidate passages.
     BM25 parameters: k1 = 1.2, k2 = 100, b = 0.75.
-    Returns a DataFrame of top 100 ranked (qid, pid, score) rows per query.
+    Returns a DataFrame of the top 100 ranked (qid, pid, score) rows per query.
     """
     total_docs = len(passages)
     avg_doc_length = np.mean([len(tokens) for tokens in passages.values()])
@@ -98,11 +97,11 @@ def rank_by_bm25(query_tf_idf, passages, inv_index, candidate_df):
             doc_len = len(p_tokens)
             bm25_score = 0
             for term in q_terms:
-                tf = inv_index.get(term, {}).get(pid, 0)
+                # Retrieve term frequency from the inverted index structure
+                tf = inv_index.get(term, {}).get(pid, {}).get('freq', 0)
                 df = len(inv_index.get(term, {}))
                 idf = math.log((total_docs - df + 0.5) / (df + 0.5) + 1)
-                # In the original code, qfi is computed by counting occurrences in query vector keys;
-                # since keys are unique, we set it to 1.
+                # qfi is set to 1 assuming unique query terms
                 qfi = 1
                 K = k1 * ((1 - b) + b * (doc_len / avg_doc_length))
                 bm25_score += idf * ((tf * (k1 + 1)) / (tf + K)) * ((k2 + 1) * qfi / (k2 + qfi))
@@ -134,8 +133,7 @@ if __name__ == "__main__":
     for _, row in query_df.iterrows():
         qid = row["qid"]
         query_text = row["query"]
-        # Use the new text processing function from task1.py;
-        # for queries, we remove stopwords and apply stemming (without lemmatization) to mimic the original.
+        # Process queries: remove stopwords and apply stemming (without lemmatization) to mimic the original.
         tokens = t1.preprocess_text(query_text, remove_stop=True, do_lemmatize=False, do_stem=True)
         query_dict[qid] = tokens
 

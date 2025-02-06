@@ -15,7 +15,7 @@ def compute_query_likelihood_scores(query_df, candidate_df, passages, queries, i
       - candidate_df: DataFrame with columns ['qid', 'pid'] linking queries with candidate passages.
       - passages: Dictionary mapping passage IDs to lists of tokens.
       - queries: Dictionary mapping query IDs to lists of tokens.
-      - inv_index: Inverted index (mapping each token to a dict of {pid: frequency}).
+      - inv_index: Inverted index (mapping each token to a dict of {pid: { "freq": frequency, "positions": [...] }}).
       - smoothing: Smoothing method ('laplace', 'lidstone', or 'dirichlet').
 
     Returns:
@@ -57,7 +57,8 @@ def compute_query_likelihood_scores(query_df, candidate_df, passages, queries, i
                 elif smoothing == 'lidstone':
                     prob = (freq + epsilon) / (doc_len + epsilon * V)
                 elif smoothing == 'dirichlet':
-                    coll_freq = sum(inv_index.get(token, {}).values())
+                    token_postings = inv_index.get(token, {})
+                    coll_freq = sum(posting.get("freq", 0) for posting in token_postings.values())
                     prob = (freq + mu * (coll_freq / corpus_size)) / (doc_len + mu)
                 # Avoid zero probabilities.
                 prob = max(prob, min_prob)
@@ -101,6 +102,9 @@ if __name__ == "__main__":
     # Compute and save query likelihood scores for each smoothing method.
     for method, out_file in zip(smoothing_list, out_files):
         scores_df = compute_query_likelihood_scores(query_df, candidate_df, processed_passages, processed_queries, inverted_index, smoothing=method)
+        # Added empirical outcome summary: print average log-probability score.
+        avg_score = scores_df['score'].mean()
+        print(f"Smoothing method: {method}, Average log-probability score: {avg_score:.6f}")
         scores_df.to_csv(out_file, index=False, header=False)
     
     end = timer()
