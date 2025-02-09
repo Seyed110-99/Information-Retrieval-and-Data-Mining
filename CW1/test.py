@@ -1,6 +1,8 @@
 import os
 from timeit import default_timer as timer
+import pandas as pd
 
+print(f"Average text size: {average_text_size:.2f} words")
 
 start = timer()
 

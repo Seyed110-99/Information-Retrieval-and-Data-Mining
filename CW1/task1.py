@@ -132,9 +132,9 @@ def create_all_plots(with_stop_df, without_stop_df):
       2. Log-log plot without stopwords
       3. Linear-scale plot with stopwords
     """
-    save_distribution_plot(with_stop_df, plot_num=1, remove_stop=False)
-    save_distribution_plot(without_stop_df, plot_num=2, remove_stop=True)
-    save_distribution_plot(with_stop_df, plot_num=3, remove_stop=False, scale="linear")
+    save_distribution_plot(with_stop_df, plot_num=2, remove_stop=False)
+    save_distribution_plot(without_stop_df, plot_num=3, remove_stop=True)
+    save_distribution_plot(with_stop_df, plot_num=1, remove_stop=False, scale="linear")
 
 
 # --- 7. Main Execution ---
