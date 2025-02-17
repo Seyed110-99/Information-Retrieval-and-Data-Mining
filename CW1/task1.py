@@ -28,16 +28,19 @@ def read_passage_file(path):
     Expects one passage per row and returns a DataFrame with column 'passage'.
     """
     try:
-        df = pd.read_csv(path, delimiter='\t', header=None)
-        df.columns = ['passage']
+        with open(path, encoding="utf8", mode="r") as file:
+            raw_text = file.readlines()
+        # Strip whitespace and skip any empty lines
+        cleaned_lines = [line.strip() for line in raw_text if line.strip()]
+        # Create a DataFrame from these lines
+        df = pd.DataFrame({'passage': cleaned_lines})
         return df
     except FileNotFoundError:
         print(f"Error: File not found - {path}")
-        return pd.DataFrame(columns=['passage'])
+        raise FileNotFoundError(f"File not found: {path}")
     except Exception as e:
         print(f"Error loading data: {e}")
-        return pd.DataFrame(columns=['passage'])
-
+        raise RuntimeError(f"Error loading data: {e}") from e
 
 # --- 2. Text Tokenization and Preprocessing ---
 def preprocess_text(text, remove_stop=False, do_lemmatize=False, do_stem=False):
