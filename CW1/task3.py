@@ -16,7 +16,7 @@ def compute_passage_idf(passages, inv_index):
     total_docs = len(passages)
     for term, doc_dict in inv_index.items():
         df = len(doc_dict)  # number of passages containing the term
-        idf_values[term] = math.log10(total_docs / (1 + df))
+        idf_values[term] = math.log10(total_docs / (df))
     return idf_values
 
 
